@@ -27,8 +27,10 @@ module BGP
   end
 
   class Orf
+    include ToShex
 
     class Entry
+      include ToShex
     end
     
     attr_accessor :type, :entries

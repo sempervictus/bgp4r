@@ -25,6 +25,7 @@ require 'bgp/common'
 module BGP
   
   module ATTR
+    include ToShex
     
     ### http://www.iana.org/assignments/bgp-parameters/bgp-parameters.xhtml#bgp-parameters-2
     

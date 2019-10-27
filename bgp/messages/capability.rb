@@ -32,6 +32,7 @@ module BGP
   class Capability < Message
     
     class Revision
+      include ToShex
       
       class <<self
         

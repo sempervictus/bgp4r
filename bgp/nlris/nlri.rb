@@ -27,6 +27,7 @@ require 'bgp/nlris/prefix'
 module BGP
 
   class Base_nlri
+    include ToShex
     
     attr_reader :nlris
     
@@ -122,6 +123,7 @@ module BGP
     end
   end
   class Nlri
+    include ToShex
     def self.factory(s, afi, safi, path_id=nil)
       if afi== 1 and safi==1
         Nlri.new_ntop(s.is_packed, path_id)

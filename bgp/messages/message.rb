@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BGP4R.  If not, see <http://www.gnu.org/licenses/>.
 #++
+require 'bgp/common'
 
 module ::BGP
 
@@ -28,6 +29,7 @@ module ::BGP
   end
 
   class Message
+    include ToShex
 
     unless const_defined? :OPEN
       OPEN          = 1

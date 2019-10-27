@@ -13,19 +13,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
 
-module Kernel
-  alias :require_orig :require
-  
-  def my_caller(caller)
-    caller.split('/')
-  end
-  
-  def require(*args)
-    #puts format("%-20s : %s", "require '#{args}'", caller[0])
-    require_orig(*args)
-  end
-end
-
 require 'ipaddr'
 require 'logger'
 
@@ -95,21 +82,23 @@ class IPAddr
 
 end
 
-class Object
-  def to_shex(*args)
-    self.respond_to?(:encode) ? self.encode(*args).unpack('H*')[0] : ""
-  end
-  alias to_s_hexlify to_shex
-  def to_shex4(*args)
-    self.respond_to?(:encode4) ? self.encode4(*args).unpack('H*')[0] : ""
-  end
-  def to_shex_len(len, *args)
-    s = to_shex(*args)
-    "#{s[0..len]}#{s.size>len ? '...' : ''}"
-  end
-  def to_shex4_len(len, *args)
-    s = to_shex4(*args)
-    "#{s[0..len]}#{s.size>len ? '...' : ''}"
+module ::BGP
+  module ToShex
+    def to_shex(*args)
+      self.respond_to?(:encode) ? self.encode(*args).unpack('H*')[0] : ""
+    end
+    alias to_s_hexlify to_shex
+    def to_shex4(*args)
+      self.respond_to?(:encode4) ? self.encode4(*args).unpack('H*')[0] : ""
+    end
+    def to_shex_len(len, *args)
+      s = to_shex(*args)
+      "#{s[0..len]}#{s.size>len ? '...' : ''}"
+    end
+    def to_shex4_len(len, *args)
+      s = to_shex4(*args)
+      "#{s[0..len]}#{s.size>len ? '...' : ''}"
+    end
   end
 end
 

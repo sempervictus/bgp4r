@@ -24,6 +24,7 @@ require 'bgp/common'
 
 module BGP
   class Label
+    include ToShex
     attr_reader :label
     def initialize(*args)
       @label, @exp = [0]*3
@@ -54,6 +55,7 @@ module BGP
     end
   end
   class Label_stack
+    include ToShex
     def initialize(*args)
       @label_stack=[]
       if args.size==1 and args[0].is_a?(String) and args[0].is_packed?

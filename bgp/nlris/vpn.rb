@@ -9,6 +9,7 @@
 
 module BGP
   class Vpn
+    include ToShex
     attr_reader :prefix, :rd
     def initialize(*args)
       @prefix=nil

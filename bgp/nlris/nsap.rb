@@ -13,6 +13,7 @@ require 'bgp/iana'
 module BGP
 
 class Nsap
+  include ToShex
   
   def self.new_nsap(s)
     pfx,len = s.split('/')
@@ -59,6 +60,7 @@ class Nsap
 end
 
 class Iso_ip_mapped < IPAddr
+  include ToShex
   def afi
     if ipv4? 
       1

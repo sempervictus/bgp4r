@@ -1,6 +1,7 @@
 require 'bgp/nlris/label'
 module BGP
   class Labeled
+    include ToShex
 
     def self.new_ntop(s, afi, safi, path_id=nil)
       nlri = new(s, afi, safi)

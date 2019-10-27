@@ -26,6 +26,7 @@ require 'bgp/nlris/nlris'
 module BGP
 
   module MpReachCommon
+    include ToShex
 
     def self.included(obj)
       obj.extend ClassMethods

@@ -16,6 +16,7 @@ module BGP
 
 class Prefix
   include BGP
+  include ToShex
   
   def self.new_ntop_extended(arg, afi=1)
     raise "#{afi}" unless (1..3) === afi || [:nsap, :ipv4, :ipv6].include?(afi)

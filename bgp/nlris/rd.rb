@@ -24,6 +24,7 @@
 require 'bgp/common'
 module BGP
   class Rd
+    include ToShex
     attr_reader :admin, :assign
     def bit_length ; 64 ; end
     def initialize(*args)

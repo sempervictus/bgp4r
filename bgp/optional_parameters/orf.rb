@@ -27,6 +27,7 @@ module BGP::OPT_PARM::CAP
 class Orf < BGP::OPT_PARM::Capability
 
   class Entry
+    include BGP::ToShex
     
     def initialize(*args)
       if args.size==1 and args[0].is_a?(String) and args[0].is_packed?

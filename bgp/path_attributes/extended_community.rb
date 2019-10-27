@@ -27,6 +27,7 @@ require 'bgp/path_attributes/attribute'
 module BGP
 
   module ATTR::XTENDED_COMMUNITY
+    include ToShex
 
     ROUTE_TARGET = 2
     ROUTE_ORIGIN = 3

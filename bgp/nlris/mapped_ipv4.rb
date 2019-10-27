@@ -11,6 +11,7 @@ require 'bgp/common'
 
 module BGP
 class Ipv4_mapped < IPAddr
+  include ToShex
   def initialize(ipaddr)
     super
     raise unless ipv4?

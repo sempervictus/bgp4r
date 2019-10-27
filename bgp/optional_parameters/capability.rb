@@ -27,6 +27,7 @@ module BGP::OPT_PARM
 
   class Capability < Optional_parameter
     include BGP
+    include ToShex
 
     unless const_defined? :Unknown
       Unknown = Class.new(self) do
