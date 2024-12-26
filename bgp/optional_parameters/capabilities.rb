@@ -1,4 +1,3 @@
-
 require 'bgp/optional_parameters/capability'
 require 'bgp/optional_parameters/dynamic'
 require 'bgp/optional_parameters/graceful_restart'

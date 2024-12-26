@@ -1,21 +1,20 @@
-
 # UPDATE Message Format
-#  
+#
 #     UPDATE messages are used to transfer routing information between BGP
 #     peers.  The information in the UPDATE message can be used to
 #     construct a graph that describes the relationships of the various
 #     Autonomous Systems.  By applying rules to be discussed, routing
-#  
-#  
-#  
+#
+#
+#
 #  Rekhter, et al.             Standards Track                    [Page 14]
-#  
+#
 #  RFC 4271                         BGP-4                      January 2006
-#  
-#  
+#
+#
 #     information loops and some other anomalies may be detected and
 #     removed from inter-AS routing.
-#  
+#
 #     An UPDATE message is used to advertise feasible routes that share
 #     common path Copyright 2008, 2009 to a peer, or to withdraw multiple unfeasible
 #     routes from service (see 3.1).  An UPDATE message MAY simultaneously
@@ -23,7 +22,7 @@
 #     from service.  The UPDATE message always includes the fixed-size BGP
 #     header, and also includes the other fields, as shown below (note,
 #     some of the shown fields may not be present in every UPDATE message):
-#  
+#
 #        +-----------------------------------------------------+
 #        |   Withdrawn Routes Length (2 octets)                |
 #        +-----------------------------------------------------+
@@ -35,32 +34,36 @@
 #        +-----------------------------------------------------+
 #        |   Network Layer Reachability Information (variable) |
 #        +-----------------------------------------------------+
-#  
+#
 
 require 'bgp/messages/message'
 require 'bgp/path_attributes/path_attribute'
 
 class BGP::Update < BGP::Message
   include BGP
-  
+
   class Info
     def initialize(*args)
-      @as4byte=args[0]
+      @as4byte = args[0]
     end
+
     def as4byte?
       @as4byte
     end
+
     def recv_inet_unicast?
       false
     end
   end
 
   def initialize(*args, &block)
-    @msg_type=UPDATE
-    @nlri, @path_attribute, @withdrawn=nil,nil,nil
+    @msg_type = UPDATE
+    @nlri = nil
+    @path_attribute = nil
+    @withdrawn = nil
     @session_info = Info.new
     if args[0].is_a?(String) and args[0].is_packed?
-      if args.size==1
+      if args.size == 1
         parse args[0], @session_info
       else
         parse(*args)
@@ -72,53 +75,54 @@ class BGP::Update < BGP::Message
       @path_attribute = Path_attribute.new(args[0][:path_attributes])  if args[0].has_key?(:path_attributes)
       @nlri = Nlri.new(*args[0][:nlris])                               if args[0].has_key?(:nlris)
     else
-      @msg_type=UPDATE
+      @msg_type = UPDATE
       set(*args)
     end
-    if block
-      @path_attribute ||= Path_attribute.new
-      @nlri ||= Nlri.new
-      instance_eval(&block)
-    end
+    return unless block
+
+    @path_attribute ||= Path_attribute.new
+    @nlri ||= Nlri.new
+    instance_eval(&block)
   end
 
   def set(*args)
-    args.each { |arg|
+    args.each do |arg|
       if arg.is_a?(Withdrawn)
-        self.withdrawn=arg
+        self.withdrawn = arg
       elsif arg.is_a?(Path_attribute)
         self.path_attribute = arg
       elsif arg.is_a?(Nlri)
         self.nlri = arg
       end
-    }
+    end
   end
 
   def session_info=(val)
-    @session_info=val
+    @session_info = val
     raise unless val.respond_to? :as4byte?
   end
 
   def withdrawn=(val)
-    @withdrawn=val if val.is_a?(Withdrawn)
+    @withdrawn = val if val.is_a?(Withdrawn)
   end
 
   def nlri=(val)
-    @nlri=val if val.is_a?(Nlri) or val.is_a?(Ext_Nlri)
+    @nlri = val if val.is_a?(Nlri) or val.is_a?(Ext_Nlri)
   end
 
   def path_attribute=(val)
-    @path_attribute=val if val.is_a?(Path_attribute)
+    @path_attribute = val if val.is_a?(Path_attribute)
   end
 
-  def encode(session_info=@session_info)
-    withdrawn, path_attribute = '', ''
+  def encode(session_info = @session_info)
+    withdrawn = ''
+    path_attribute = ''
     withdrawn = @withdrawn.encode if @withdrawn
     path_attribute = @path_attribute.encode(session_info.as4byte?) if @path_attribute
     super([withdrawn.size, withdrawn, path_attribute.size, path_attribute, encoded_nlri].pack('na*na*a*'))
   end
 
-  def encode4()
+  def encode4
     encode(Info.new(true))
   end
 
@@ -127,24 +131,23 @@ class BGP::Update < BGP::Message
   def parse(s, session_info)
     update = super(s)
 
-    len = update.slice!(0,2).unpack('n')[0]
-    
-    if len>0
-      s = update.slice!(0,len)
-      w =  Withdrawn.new_ntop(s,ext_nlri?(session_info))
-      self.withdrawn= w
+    len = update.slice!(0, 2).unpack('n')[0]
+
+    if len > 0
+      s = update.slice!(0, len)
+      w = Withdrawn.new_ntop(s, ext_nlri?(session_info))
+      self.withdrawn = w
     end
 
-    len = update.slice!(0,2).unpack('n')[0]
-    if len>0
-      enc_path_attribute = update.slice!(0,len).is_packed
-      self.path_attribute=Path_attribute.new(enc_path_attribute, session_info)
+    len = update.slice!(0, 2).unpack('n')[0]
+    if len > 0
+      enc_path_attribute = update.slice!(0, len).is_packed
+      self.path_attribute = Path_attribute.new(enc_path_attribute, session_info)
     end
 
-    self.nlri = Nlri.factory(update, 1, 1, ext_nlri?(session_info)) if update.size>0
-    
+    self.nlri = Nlri.factory(update, 1, 1, ext_nlri?(session_info)) if update.size > 0
   end
-  
+
   def ext_nlri?(session_info)
     session_info and session_info.recv_inet_unicast?
   end
@@ -154,11 +157,11 @@ class BGP::Update < BGP::Message
       @path_attribute ||= Path_attribute.new
       @path_attribute << val
     elsif val.is_a?(String)
-      begin 
+      begin
         # Nlri.new(val)
-        @nlri ||=Nlri.new
+        @nlri ||= Nlri.new
         @nlri << val
-      rescue => e
+      rescue StandardError => e
         p "JME: ***** #{val.inspect}"
         p e
         raise
@@ -170,22 +173,22 @@ class BGP::Update < BGP::Message
     end
   end
 
-  def to_s(session_info=@session_info)
+  def to_s(session_info = @session_info)
     msg = encode(session_info)
-    fmt=:tcpdump
+    fmt = :tcpdump
     s = []
     if @withdrawn
-      s << "Withdrawn Routes:"
+      s << 'Withdrawn Routes:'
       s << @withdrawn.to_s if @withdrawn
     end
 
     s << @path_attribute.to_s(fmt, session_info.as4byte?) if defined?(@path_attribute) and @path_attribute
     if @nlri
-      s << "Network Layer Reachability Information:"
+      s << 'Network Layer Reachability Information:'
       s << @nlri.to_s
     end
-    "Update Message (#{UPDATE}), #{session_info.as4byte? ? "4 bytes AS, " : ''}length: #{msg.size}\n" +
-    s.join("\n") + "\n" + msg.hexlify.join("\n") + "\n"
+    "Update Message (#{UPDATE}), #{session_info.as4byte? ? '4 bytes AS, ' : ''}length: #{msg.size}\n" +
+      s.join("\n") + "\n" + msg.hexlify.join("\n") + "\n"
   end
 
   def to_hash
@@ -197,8 +200,8 @@ class BGP::Update < BGP::Message
   end
 
   def self.withdrawn(u)
-    if u.nlri and u.nlri.size>0
-      Update.new(Withdrawn.new(*(u.nlri.nlris.collect { |n| n.to_s})))
+    if u.nlri and u.nlri.size > 0
+      Update.new(Withdrawn.new(*(u.nlri.nlris.collect { |n| n.to_s })))
     elsif u.path_attribute.has?(Mp_reach)
       pa = Path_attribute.new
       pa << u.path_attribute[ATTR::MP_REACH].new_unreach
@@ -211,7 +214,6 @@ class BGP::Update < BGP::Message
   def encoded_nlri
     @nlri.encode if @nlri
   end
-
 end
 
-load "../../test/unit/messages/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0 
+load "../../test/unit/messages/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

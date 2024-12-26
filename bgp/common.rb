@@ -37,75 +37,78 @@ class IPAddr
 
   def _generate_network_inc_
     max_len =  ipv4? ? 32 : 128
-    Proc.new { |n| n*(2**(max_len - mlen)) }
+    proc { |n| n * (2**(max_len - mlen)) }
   end
-  def +(i)
-    [IPAddr.create(to_i + i).to_s, mlen].join("/")
+
+  def +(other)
+    [IPAddr.create(to_i + other).to_s, mlen].join('/')
   end
-  
+
   def increment
     @increment ||= _generate_network_inc_
   end
-  
-  def ^(i)
-    x = to_i + increment.call(i)
+
+  def ^(other)
+    x = to_i + increment.call(other)
     if ipv4?
-      [IPAddr.create(x).to_s, mlen].join("/")
+      [IPAddr.create(x).to_s, mlen].join('/')
     else
-      y = [(format "%032x",x)].pack('H*')
-      [IPAddr.new_ntoh(y).to_s ,mlen].join("/")
+      y = [(format '%032x', x)].pack('H*')
+      [IPAddr.new_ntoh(y).to_s, mlen].join('/')
     end
   end
-  
+
   private :_generate_network_inc_
 
   def netmask
     if ipv4?
-      [@mask_addr].pack('N').unpack('C4').collect { |x| x.to_s}.join('.')
+      [@mask_addr].pack('N').unpack('C4').collect { |x| x.to_s }.join('.')
     else
       @mask_addr.to_s(16).scan(/..../).collect { |x| x }.join(':')
     end
   end
-  
-  private 
-  
+
+  private
+
   def _mlen_
     m = @mask_addr
-    len =  ipv6? ? 128 : 32
+    len = ipv6? ? 128 : 32
     loop do
       break if m & 1 > 0
-      m = m >> 1
+
+      m >>= 1
       len += -1
     end
     len
   end
-
 end
 
 module ::BGP
   module ToShex
     def to_shex(*args)
-      self.respond_to?(:encode) ? self.encode(*args).unpack('H*')[0] : ""
+      respond_to?(:encode) ? encode(*args).unpack('H*')[0] : ''
     end
     alias to_s_hexlify to_shex
     def to_shex4(*args)
-      self.respond_to?(:encode4) ? self.encode4(*args).unpack('H*')[0] : ""
+      respond_to?(:encode4) ? encode4(*args).unpack('H*')[0] : ''
     end
+
     def to_shex_len(len, *args)
       s = to_shex(*args)
-      "#{s[0..len]}#{s.size>len ? '...' : ''}"
+      "#{s[0..len]}#{s.size > len ? '...' : ''}"
     end
+
     def to_shex4_len(len, *args)
       s = to_shex4(*args)
-      "#{s[0..len]}#{s.size>len ? '...' : ''}"
+      "#{s[0..len]}#{s.size > len ? '...' : ''}"
     end
   end
 end
 
 class Array
-  alias_method :old_pack, :pack
+  alias old_pack pack
   def pack(*args)
-    s = self.old_pack(*args)
+    s = old_pack(*args)
     s.instance_eval { @__is_packed__ = true }
     s
   end
@@ -115,96 +118,115 @@ class String
   def is_packed?
     defined?(@__is_packed__) and @__is_packed__
   end
+
   def is_packed
-     @__is_packed__ = true 
-     self
+    @__is_packed__ = true
+    self
   end
   alias packed? :is_packed?
-  
+
   def hexlify
-    return self unless is_packed? or self.size==0
-    l,n,ls,s=0,0,[''],self.dup
-    while s.size>0
-      l = s.slice!(0,16)
-      ls << format("0x%4.4x:  %s", n, l.unpack("n#{l.size/2}").collect { |x| format("%4.4x",x) }.join(' '))
-      n+=1
+    return self unless is_packed? or size == 0
+
+    l = 0
+    n = 0
+    ls = ['']
+    s = dup
+    while s.size > 0
+      l = s.slice!(0, 16)
+      ls << format('0x%4.4x:  %s', n, l.unpack("n#{l.size / 2}").collect { |x| format('%4.4x', x) }.join(' '))
+      n += 1
     end
-    if l.size%2 >0
-      ns = if l.size>1 then 1 else 0 end
-        if RUBY_VERSION.split('.').join[0,2] > "18"
-          ls.last << format("%s%2.2x",' '*ns,l[-1].unpack('C')[0])
-        else
-          ls.last << format("%s%2.2x",' '*ns,l[-1])
-        end
+    if l.size % 2 > 0
+      ns = l.size > 1 ? 1 : 0
+      ls.last << if RUBY_VERSION.split('.').join[0, 2] > '18'
+                   format('%s%2.2x', ' ' * ns, l[-1].unpack('C')[0])
+                 else
+                   format('%s%2.2x', ' ' * ns, l[-1])
+                 end
     end
     ls
   end
-  
 end
 
-class Log  < Logger
-  private_class_method :new 
+class Log < Logger
+  private_class_method :new
   @@logger = nil
   def initialize(s)
     super(s)
-    @@time=Time.now
-    self.datetime_format = "%M:%S"
+    @@time = Time.now
+    self.datetime_format = '%M:%S'
     self.level = Logger::INFO
-  end 
-  def Log.time_reset
+  end
+
+  def self.time_reset
     @time = Time.now
   end
-  def Log.create(s=STDERR)
+
+  def self.create(s = STDERR)
     @@logger ||= new(s)
   end
-  def Log.set_filename(s)
+
+  def self.set_filename(s)
     @@logger = new(s)
-  end 
-  def Log.level=(level)
-    return unless (0..4) === level
-    @@logger.level=(level)
-  end 
-  def Log.level
+  end
+
+  def self.level=(level)
+    return unless (0..4).include?(level)
+
+    @@logger.level = (level)
+  end
+
+  def self.level
     case @@logger.level
-    when Logger::INFO ;  "(#{Logger::INFO }) 'INFO'"
-    when Logger::DEBUG ; "(#{Logger::DEBUG }) 'DEBUG'"
-    when Logger::WARN ;  "(#{Logger::WARN }) 'WARN'"
-    when Logger::ERROR ; "(#{Logger::ERROR }) 'ERROR'"
-    when Logger::FATAL ; "(#{Logger::FATAL }) 'FATAL'"
+    when Logger::INFO then  "(#{Logger::INFO}) 'INFO'"
+    when Logger::DEBUG then "(#{Logger::DEBUG}) 'DEBUG'"
+    when Logger::WARN then  "(#{Logger::WARN}) 'WARN'"
+    when Logger::ERROR then "(#{Logger::ERROR}) 'ERROR'"
+    when Logger::FATAL then "(#{Logger::FATAL}) 'FATAL'"
     end
   end
-  def Log.clear
+
+  def self.clear
     `rm #{Log.filename}`
     Log.set_filename(Log.filename)
   end
-  def Log.filename
+
+  def self.filename
     @@logger.instance_eval { @logdev.filename }
   end
-  def Log.start(*arg)
+
+  def self.start(*arg)
     Log.create(*arg)
-  end 
-  def Log.info(txt)
+  end
+
+  def self.info(txt)
     @@logger.info(txt) unless @@logger.nil?
   end
-  def Log.fatal(txt)
+
+  def self.fatal(txt)
     @@logger.fatal(txt) unless @@logger.nil?
   end
-  def Log.error(txt)
+
+  def self.error(txt)
     @@logger.error(txt) unless @@logger.nil?
   end
-  def Log.debug(txt)
+
+  def self.debug(txt)
     @@logger.debug(txt) unless @@logger.nil?
   end
-  def Log.warn(txt)
+
+  def self.warn(txt)
     @@logger.warn(txt) unless @@logger.nil?
   end
-  def Log.<<(txt)
-    elapsed = Time.now - @@time
-    @@logger << "<< #{format "%4.6f", elapsed}: #{txt}\n" unless @@logger.nil?
-  end
-  def Log.>>(txt)
-    elapsed = Time.now.to_f - @@time.to_f
-    @@logger << ">> #{format "%4.6f", elapsed}: #{txt}\n" unless @@logger.nil?
-  end
-end 
 
+  def self.<<(txt)
+    elapsed = Time.now - @@time
+    @@logger << "<< #{format '%4.6f', elapsed}: #{txt}\n" unless @@logger.nil?
+  end
+
+  def self.>>(txt)
+    elapsed = Time.now.to_f - @@time.to_f
+    @@logger << ">> #{format '%4.6f', elapsed}: #{txt}\n" unless @@logger.nil?
+  end
+end

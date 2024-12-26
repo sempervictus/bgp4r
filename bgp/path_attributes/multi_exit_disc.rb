@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -20,21 +20,19 @@
 # along with BGP4R.  If not, see <http://www.gnu.org/licenses/>.
 #++
 
-
 require 'bgp/path_attributes/attribute'
 
 module BGP
-
   class Multi_exit_disc < Attr
-
     class << self
-      def new_hash(arg={})
+      def new_hash(arg = {})
         new arg
       end
     end
 
-    def initialize(arg=0)
-      @flags, @type=OPTIONAL, MULTI_EXIT_DISC
+    def initialize(arg = 0)
+      @flags = OPTIONAL
+      @type = MULTI_EXIT_DISC
       if arg.is_a?(String) and arg.is_packed?
         parse(arg)
       elsif arg.is_a?(self.class)
@@ -50,41 +48,40 @@ module BGP
     end
 
     def med=(val)
-      raise ArgumentError, "invalid argument" unless val.is_a?(Integer)
-      @med=val
+      raise ArgumentError, 'invalid argument' unless val.is_a?(Integer)
+
+      @med = val
     end
 
     def to_i
       @med
     end
 
-    def +(val)
-      @med +=val
+    def +(other)
+      @med += other
     end
 
     def encode
       super([to_i].pack('N'))
     end
-    
+
     def multi_exit_disc
-      format("(0x%4.4x) %d", to_i, to_i)
+      format('(0x%4.4x) %d', to_i, to_i)
     end
 
-    def to_s(method=:default)
+    def to_s(method = :default)
       super(multi_exit_disc, method)
     end
 
     def to_hash
-      {:med=>to_i}
+      { med: to_i }
     end
 
     private
 
     def parse(s)
-      @flags, @type, _, @med=super(s,'N')
+      @flags, @type, _, @med = super(s, 'N')
     end
-
   end
-
 end
-load "../../test/unit/path_attributes/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/path_attributes/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

@@ -1,16 +1,16 @@
- #--
+#--
 # Copyright 2008-2009, 2011 Jean-Michel Esnault.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,7 +24,6 @@ require 'bgp/path_attributes/attribute'
 require 'bgp/nlris/nlris'
 
 module BGP
-
   module MpReachCommon
     include ToShex
 
@@ -37,7 +36,7 @@ module BGP
       @path_id = h[:path_id]
       @afi = h[:afi] || self.class.afi_from_nlris(h[:nlris])
       case safi
-      when 1,2
+      when 1, 2
         pfx_klass = prefix_klass(afi, safi)
         @nlris = [h[:nlris]].flatten.compact.collect do |n|
           case n
@@ -55,48 +54,47 @@ module BGP
         @nlris = [h[:nlris]].flatten.compact.collect do |n|
           path_id = n[:path_id] || @path_id
           prefix = n[:prefix].is_a?(String) ? Prefix.new(n[:prefix]) : n[:prefix]
-          Labeled.new_with_path_id(path_id,prefix, *n[:label])
+          Labeled.new_with_path_id(path_id, prefix, *n[:label])
         end
-      when 128,129
+      when 128, 129
         @nlris = [h[:nlris]].flatten.compact.collect do |n|
           path_id = n[:path_id] || @path_id
-          prefix = n[:prefix].is_a?(Prefix) ? n[:prefix] :  Prefix.new(n[:prefix]) 
-          rd = n[:rd].is_a?(Rd) ?  n[:rd] : Rd.new(*n[:rd])
-          Labeled.new_with_path_id(path_id,Vpn.new(prefix,rd), *n[:label]) 
+          prefix = n[:prefix].is_a?(Prefix) ? n[:prefix] : Prefix.new(n[:prefix])
+          rd = n[:rd].is_a?(Rd) ? n[:rd] : Rd.new(*n[:rd])
+          Labeled.new_with_path_id(path_id, Vpn.new(prefix, rd), *n[:label])
         end
       else
         raise "SAFI #{safi} not implemented!"
       end
-      @nexthops = [h[:nexthop]].flatten.collect { |nh| nexthop_klass(afi,safi,nh).new(nh) } if h[:nexthop]
+      @nexthops = [h[:nexthop]].flatten.collect { |nh| nexthop_klass(afi, safi, nh).new(nh) } if h[:nexthop]
       self
     end
-    
+
     def to_hash
-      h_afi_safi = {:safi=> @safi, :afi=>@afi}
-      h_nlris = @nlris.size>1 ? @nlris.collect { |n| nlri_to_hash(n) } : nlri_to_hash(@nlris[0])
-      h = if @nexthops.empty?
-        h_afi_safi.merge(:nlris=>h_nlris)
+      h_afi_safi = { safi: @safi, afi: @afi }
+      h_nlris = @nlris.size > 1 ? @nlris.collect { |n| nlri_to_hash(n) } : nlri_to_hash(@nlris[0])
+      if @nexthops.empty?
+        h_afi_safi.merge(nlris: h_nlris)
       else
-        h_afi_safi.merge(:nlris=>h_nlris).merge({:nexthop=>@nexthops.collect { |n| n.nexthop.to_s }} )
-      end      
-      h
+        h_afi_safi.merge(nlris: h_nlris).merge({ nexthop: @nexthops.collect { |n| n.nexthop.to_s } })
+      end
     end
-    
+
     def nlri_to_hash(nlri)
-      if nlri.is_a?(Prefix) and ! nlri.extended?
+      if nlri.is_a?(Prefix) and !nlri.extended?
         nlri.to_s
       else
         nlri.to_hash
-      end  
+      end
     end
     private :nlri_to_hash
-    
+
     module ClassMethods
       def afi_from_nlris(arg)
         case arg
         when String
           _arg = arg
-        when Hash,Array
+        when Hash, Array
           case [arg].flatten[0]
           when Hash
             _arg = [arg].flatten[0][:prefix]
@@ -108,7 +106,7 @@ module BGP
         when Hash
           _arg = arg[:prefix]
         else
-          p "**********************"
+          p '**********************'
           p arg
           raise
         end
@@ -122,197 +120,197 @@ module BGP
         end
       end
     end
-    
-    private 
-    
+
+    private
+
     def prefix_klass(afi, safi)
       case afi
-      when 1,2
-        _afi='Inet'
+      when 1, 2
+        _afi = 'Inet'
       when 3
         return ::BGP.const_get('Prefix')
       else
         raise
       end
       _safi = case safi
-      when 1 ; 'unicast'
-      when 2 ; 'multicast'
-      else
-        raise
-      end
-      ::BGP.const_get([_afi,_safi].join('_'))
+              when 1 then 'unicast'
+              when 2 then 'multicast'
+              else
+                raise
+              end
+      ::BGP.const_get([_afi, _safi].join('_'))
     end
-    
   end
 
-
   class Mp_reach < Attr
-    
     include MpReachCommon
 
     attr_reader :safi, :nlris, :path_id, :afi
 
     def initialize(*args)
-      @safi, @nexthops, @nlris, @path_id= 1, [], [], nil # default is ipv4/unicast
-      @flags, @type = OPTIONAL, MP_REACH
+      @safi = 1
+      @nexthops = []
+      @nlris = []
+      @path_id = nil # default is ipv4/unicast
+      @flags = OPTIONAL
+      @type = MP_REACH
       if args[0].is_a?(String) and args[0].is_packed?
         parse(*args)
       elsif args[0].is_a?(self.class)
         s = args.shift.encode
         parse(s, *args)
-      elsif args[0].is_a?(Hash) and args.size==1
+      elsif args[0].is_a?(Hash) and args.size == 1
         set(*args)
       else
         p args
-        raise ArgumentError, "invalid argument" 
+        raise ArgumentError, 'invalid argument'
       end
     end
 
     def nexthops
-      @nexthops.collect { |nh| nh.nexthop }.join(", ")
+      @nexthops.collect { |nh| nh.nexthop }.join(', ')
     end
 
     def mp_reach
       "\n    AFI #{IANA.afi?(afi)} (#{afi}), SAFI #{IANA.safi?(safi)} (#{safi})" +
-      "\n    nexthop: " + nexthops +
-      (['']+ @nlris.collect { |nlri| nlri.to_s }).join("\n      ")
+        "\n    nexthop: " + nexthops +
+        ([''] + @nlris.collect { |nlri| nlri.to_s }).join("\n      ")
     end
 
-    def to_s(method=:default)
+    def to_s(method = :default)
       super(mp_reach, method)
     end
+
     def to_hash
-      {:mp_reach=>super}
+      { mp_reach: super }
     end
 
-    def parse(s,arg=false)
-
+    def parse(s, arg = false)
       @flags, @type, _, value = super(s)
-      @afi, @safi, nh_len = value.slice!(0,4).unpack('nCC')
+      @afi, @safi, nh_len = value.slice!(0, 4).unpack('nCC')
 
       case @afi
       when 3
 
-        parse_iso_mapped_next_hops value.slice!(0,nh_len).is_packed
-        value.slice!(0,1)
+        parse_iso_mapped_next_hops value.slice!(0, nh_len).is_packed
+        value.slice!(0, 1)
 
-        if arg.respond_to?(:path_id?)
-          path_id_flag = arg.path_id? :recv, @afi, @safi
-        else
-          path_id_flag = arg
-        end
+        path_id_flag = if arg.respond_to?(:path_id?)
+                         arg.path_id? :recv, @afi, @safi
+                       else
+                         arg
+                       end
 
-        while value.size>0
-          path_id = value.slice!(0,4).unpack('N')[0]  if path_id_flag
-          blen = value.slice(0,1).unpack('C')[0]
-          nlri = Nlri.factory(value.slice!(0,(blen+7)/8+1), @afi, @safi, path_id)
+        while value.size > 0
+          path_id = value.slice!(0, 4).unpack('N')[0] if path_id_flag
+          blen = value.slice(0, 1).unpack('C')[0]
+          nlri = Nlri.factory(value.slice!(0, (blen + 7) / 8 + 1), @afi, @safi, path_id)
           # nlri = Nsap.new_ntoh(value.slice!(0,(blen+7)/8+1))
           @nlris << nlri
         end
 
       else
 
-        parse_next_hops value.slice!(0,nh_len).is_packed
-        value.slice!(0,1)
+        parse_next_hops value.slice!(0, nh_len).is_packed
+        value.slice!(0, 1)
 
-        if arg.respond_to?(:path_id?)
-          path_id_flag = arg.path_id? :recv, @afi, @safi
-        else
-          path_id_flag = arg
-        end
+        path_id_flag = if arg.respond_to?(:path_id?)
+                         arg.path_id? :recv, @afi, @safi
+                       else
+                         arg
+                       end
 
-        while value.size>0          
-          path_id = path_id_flag ? value.slice!(0,4).unpack('N')[0] : nil
-          blen = value.slice(0,1).unpack('C')[0]
-          nlri = Nlri.factory(value.slice!(0,(blen+7)/8+1), @afi, @safi, path_id)
+        while value.size > 0
+          path_id = path_id_flag ? value.slice!(0, 4).unpack('N')[0] : nil
+          blen = value.slice(0, 1).unpack('C')[0]
+          nlri = Nlri.factory(value.slice!(0, (blen + 7) / 8 + 1), @afi, @safi, path_id)
           @nlris << nlri
         end
       end
-      raise RuntimeError, "leftover afer parsing: #{value.unpack('H*')}" if value.size>0
+      raise "leftover afer parsing: #{value.unpack('H*')}" if value.size > 0
     end
-    
+
     def parse_iso_mapped_next_hops(s)
       raise unless @afi == 3
-      while s.size>0
-        s.slice!(0,8) if (128..129)===@safi
-        case s.slice(0,1).unpack('C')[0]
+
+      while s.size > 0
+        s.slice!(0, 8) if (128..129).include?(@safi)
+        case s.slice(0, 1).unpack('C')[0]
         when 0x47
-          s.slice!(0,4)
-          @nexthops << Iso_ip_mapped.new(Prefix.new_ntop([32,s.slice!(0,4)].pack('Ca*'),1).to_s)
+          s.slice!(0, 4)
+          @nexthops << Iso_ip_mapped.new(Prefix.new_ntop([32, s.slice!(0, 4)].pack('Ca*'), 1).to_s)
         when 0x35
-          s.slice!(0,3)
-          @nexthops << Iso_ip_mapped.new(Prefix.new_ntop([128,s.slice!(0,16)].pack('Ca*'),2).to_s)
+          s.slice!(0, 3)
+          @nexthops << Iso_ip_mapped.new(Prefix.new_ntop([128, s.slice!(0, 16)].pack('Ca*'), 2).to_s)
         else
-          raise 
+          raise
         end
         # skip magic
-        s.slice!(0,1)
+        s.slice!(0, 1)
       end
     end
-    
+
     def parse_next_hops(s)
-      while s.size>0
+      while s.size > 0
         case @safi
-        when 1,2,4
+        when 1, 2, 4
           case @afi
           when 1
-            @nexthops << Prefix.new_ntop([32,s.slice!(0,4)].pack('Ca*'),1)
+            @nexthops << Prefix.new_ntop([32, s.slice!(0, 4)].pack('Ca*'), 1)
           when 2
-            @nexthops << Prefix.new_ntop([128,s.slice!(0,16)].pack('Ca*'),2)
+            @nexthops << Prefix.new_ntop([128, s.slice!(0, 16)].pack('Ca*'), 2)
           when 3
-            raise "TBD"
-          else 
-            raise "SHOULD NOT BE HERE ...."
+            raise 'TBD'
+          else
+            raise 'SHOULD NOT BE HERE ....'
           end
-        when 128,129
-          @nexthops << Vpn.new([64+32,s.slice!(0,12)].pack('Ca*'))
+        when 128, 129
+          @nexthops << Vpn.new([64 + 32, s.slice!(0, 12)].pack('Ca*'))
         else
-          raise RuntimeError, "cannot parse nexthop for safi #{@safi}"
+          raise "cannot parse nexthop for safi #{@safi}"
         end
       end
     end
-    
-    def encode(what=:mp_reach)
+
+    def encode(what = :mp_reach)
       case what
       when :mp_reach
         nexthops = @nexthops.collect { |nh| nh.encode_next_hop(safi) }.join
         nlris =  @nlris.collect { |n| n.encode }.join
-        super([afi, @safi, nexthops.size, nexthops, 0, nlris ].pack('nCCa*Ca*'))
+        super([afi, @safi, nexthops.size, nexthops, 0, nlris].pack('nCCa*Ca*'))
       when :mp_unreach
         super([afi, @safi, @nlris.collect { |n| n.encode }.join].pack('nCa*'))
       end
     end
-    
+
     def new_unreach
       s = encode(:mp_unreach)
-      s[1]= [MP_UNREACH].pack('C')
+      s[1] = [MP_UNREACH].pack('C')
       Mp_unreach.new(s)
     end
-    
+
     private
-    
+
     def nexthop_klass(afi, safi, nh)
       case afi
       when 3
-        ::BGP::const_get('Iso_ip_mapped')
+        ::BGP.const_get('Iso_ip_mapped')
       else
         case safi
-        when 1,2,4
-          if afi==2 &&  IPAddr.new(nh).ipv4?
-            ::BGP::const_get('Ipv4_mapped')
+        when 1, 2, 4
+          if afi == 2 && IPAddr.new(nh).ipv4?
+            ::BGP.const_get('Ipv4_mapped')
           else
-            ::BGP::const_get('Prefix')
+            ::BGP.const_get('Prefix')
           end
-        when 128,129
-          ::BGP::const_get('Vpn')
+        when 128, 129
+          ::BGP.const_get('Vpn')
         else
           raise
         end
       end
     end
-    
   end
-
 end
 
-load "../../test/unit/path_attributes/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/path_attributes/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

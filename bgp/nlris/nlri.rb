@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -20,27 +20,23 @@
 # along with BGP4R.  If not, see <http://www.gnu.org/licenses/>.
 #++
 
-
 require 'bgp/common'
 require 'bgp/iana'
 require 'bgp/nlris/prefix'
 module BGP
-
   class Base_nlri
     include ToShex
-    
+
     attr_reader :nlris
-    
+
     class << self
-      def new_ntop(s, path_id=nil)
+      def new_ntop(s, path_id = nil)
         nlri = new
-        while s.size>0
-          nlri.add Prefix.send((path_id ? :new_ntop_extended : :new_ntop ), s, 1)
-        end
+        nlri.add Prefix.send((path_id ? :new_ntop_extended : :new_ntop), s, 1) while s.size > 0
         nlri
       end
     end
-    
+
     def initialize(*args)
       if args[0].is_a?(String) and args[0].is_packed?
         parse(*args)
@@ -48,42 +44,39 @@ module BGP
         add(*args)
       end
     end
+
     def add(*args)
-      @nlris ||=[]
-      args.each { |arg|
+      @nlris ||= []
+      args.each do |arg|
         case arg
         when Hash
-          if arg.has_key? :path_id
-            @nlris << Prefix.new(arg[:path_id], arg[:nlri])
-          else
-            raise
-          end
+          raise unless arg.has_key? :path_id
+
+          @nlris << Prefix.new(arg[:path_id], arg[:nlri])
+
         when String
           o = Prefix.new(arg)
           @nlris << o
         when Array
-          if arg[0].is_a?(Integer)
-            @nlris << Prefix.new(*arg)
-          else
-            raise
-          end
+          raise unless arg[0].is_a?(Integer)
+
+          @nlris << Prefix.new(*arg)
+
         when Prefix
           @nlris << arg
         else
           raise ArgumentError, "Invalid argument #{arg.class} #{arg.inspect}"
         end
-      }
+      end
     end
     alias << add
 
     def parse(s)
-      @nlris ||=[]
-      while s.size>0
-        add(s)
-      end
+      @nlris ||= []
+      add(s) while s.size > 0
     end
 
-    def encode(len_included=false)
+    def encode(len_included = false)
       enc = @nlris.collect { |x| x.encode }.join
       if len_included
         [enc.size].pack('n') + enc
@@ -92,14 +85,14 @@ module BGP
       end
     end
 
-    def to_s(indent=0)
-      @nlris.join("\n#{([' ']*indent).join}")
+    def to_s(indent = 0)
+      @nlris.join("\n#{([' '] * indent).join}")
     end
-    
+
     def size
       @nlris.size
     end
-    
+
     def empty?
       @nlris.empty?
     end
@@ -107,43 +100,41 @@ module BGP
     def to_ary
       @nlris.collect { |n| n.to_s }
     end
-
   end
 
   unless const_defined?(:Nlri)
-    Nlri      = Class.new(Base_nlri) do
+    Nlri = Class.new(Base_nlri) do
       def to_hash
-        {:nlris=>to_ary}
+        { nlris: to_ary }
       end
     end
     Withdrawn = Class.new(Base_nlri) do
       def to_hash
-        {:withdrawns=>to_ary}
+        { withdrawns: to_ary }
       end
     end
   end
   class Nlri
     include ToShex
-    def self.factory(s, afi, safi, path_id=nil)
-      if afi== 1 and safi==1
+    def self.factory(s, afi, safi, path_id = nil)
+      if afi == 1 and safi == 1
         Nlri.new_ntop(s.is_packed, path_id)
       else
         case safi
-        when 1,2
+        when 1, 2
           Prefix.new_ntop(s.is_packed, afi, path_id)
-        when 4,128,129
+        when 4, 128, 129
           Labeled.new_ntop(s.is_packed, afi, safi, path_id)
         else
-          #TODO class Error.....
-          raise RuntimeError, "Afi #{afi} Safi #{safi} not supported!"
+          # TODO: class Error.....
+          raise "Afi #{afi} Safi #{safi} not supported!"
         end
       end
     end
   end
-  
 end
 
-load "../../test/unit/nlris/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/nlris/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0
 
 
 __END__

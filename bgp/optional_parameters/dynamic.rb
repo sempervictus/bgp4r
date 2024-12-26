@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -23,15 +23,15 @@
 require 'bgp/optional_parameters/capability'
 
 module BGP::OPT_PARM::CAP
+  class Dynamic < BGP::OPT_PARM::Capability
+    def initialize(code = BGP::OPT_PARM::CAP_DYNAMIC)
+      super(code)
+    end
 
-class Dynamic < BGP::OPT_PARM::Capability 
-  def initialize(code=BGP::OPT_PARM::CAP_DYNAMIC)
-    super(code)
-  end
-  def to_s
-    super + "\n    Dynamic Capability #{@code}, length: 2"
+    def to_s
+      super + "\n    Dynamic Capability #{@code}, length: 2"
+    end
   end
 end
-end
 
-load "../../test/unit/optional_parameters/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/optional_parameters/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

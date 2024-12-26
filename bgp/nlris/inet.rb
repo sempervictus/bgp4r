@@ -2,10 +2,10 @@ require 'bgp/nlris/prefix'
 
 module BGP
   unless const_defined?(:Inet_unicast)
-    [:unicast, :multicast].each do |n|
+    %i[unicast multicast].each do |n|
       inet_klass = Class.new(Prefix) do
         define_method(:safi) do
-          @safi ||=IANA::SAFI.const_get(n.to_s.upcase)
+          @safi ||= IANA::SAFI.const_get(n.to_s.upcase)
         end
       end
       const_set("Inet_#{n}", inet_klass)
@@ -13,4 +13,4 @@ module BGP
   end
 end
 
-load "../../test/unit/nlris/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/nlris/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

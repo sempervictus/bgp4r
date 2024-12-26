@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -29,7 +29,7 @@ require 'bgp/neighbor/add_path_cap'
 module BGP
   class Neighbor
     include Observable
-    
+
     def log_info(txt)
       Log.info "#{self.class} #{txt}"
     end
@@ -44,69 +44,68 @@ module BGP
 
     def initialize(*args)
       @opt_parms = []
-      if args.size==1 and args[0].is_a?(Hash)
+      if args.size == 1 and args[0].is_a?(Hash)
         set args[0]
       else
-        @version, @my_as, @holdtime, @id, @remote_addr, @local_addr  = args
+        @version, @my_as, @holdtime, @id, @remote_addr, @local_addr = args
       end
       @state = :Idle
-      @session_info=nil
-      @threads=ThreadGroup.new
+      @session_info = nil
+      @threads = ThreadGroup.new
       @mutex = Mutex.new
       @eventQ = Queue.new
       event_dispatch
     end
-    
+
     def set(_h)
-      h = { :version=>4, :holdtime=>180 }.merge(_h)
-      [:version, :my_as, :holdtime, :id, :remote_addr, :local_addr].each do |name|
+      h = { version: 4, holdtime: 180 }.merge(_h)
+      %i[version my_as holdtime id remote_addr local_addr].each do |name|
         instance_variable_set("@#{name}", h[name]) if h.has_key?(name)
       end
     end
-    
-    [:Idle, :Established, :OpenRecv, :OpenConfirm, :Active, :OpenSent].each do |state|
+
+    %i[Idle Established OpenRecv OpenConfirm Active OpenSent].each do |state|
       define_method("is_#{state.to_s.downcase}?") do
         @state == state
       end
     end
-    
-    def capability(*args)
 
+    def capability(*args)
       @opt_parms << if args[0].is_a?(Symbol)
-        case args[0]
-        when :route_refresh, :rr
-          OPT_PARM::CAP::Route_refresh.new(*args[1..-1])
-        when :mbgp
-          OPT_PARM::CAP::Mbgp.new(*args[1..-1])
-        when :as4_byte, :as4byte, :as4
-          OPT_PARM::CAP::As4.new(@my_as)
-        when :gr, :graceful_restart
-          OPT_PARM::CAP::Graceful_restart.new(*args[1..-1])
-        else
-          raise ArgumentError, "Invalid argument #{args.inspect}", caller
-        end        
-      elsif args[0].is_a?(OPT_PARM::Capability)
-        args[0]
-      else
-        raise ArgumentError, "Invalid argument"
-      end
+                      case args[0]
+                      when :route_refresh, :rr
+                        OPT_PARM::CAP::Route_refresh.new(*args[1..-1])
+                      when :mbgp
+                        OPT_PARM::CAP::Mbgp.new(*args[1..-1])
+                      when :as4_byte, :as4byte, :as4
+                        OPT_PARM::CAP::As4.new(@my_as)
+                      when :gr, :graceful_restart
+                        OPT_PARM::CAP::Graceful_restart.new(*args[1..-1])
+                      else
+                        raise ArgumentError, "Invalid argument #{args.inspect}", caller
+                      end
+                    elsif args[0].is_a?(OPT_PARM::Capability)
+                      args[0]
+                    else
+                      raise ArgumentError, 'Invalid argument'
+                    end
     end
-    alias :add_cap :capability
-    
+    alias add_cap capability
+
     def method_missing(name, *args, &block)
       if name.to_s =~ /^(capability|add_capability)_(.+)$/
-        r = $2.dup
+        r = ::Regexp.last_match(2).dup
         @opt_parms << if r =~ /mbgp_(.+)/
-          OPT_PARM::CAP::Mbgp.send $1
-        elsif r =~ /(rr|route_refresh)/
-          OPT_PARM::CAP::Route_refresh.new( *args)
-        elsif r =~ /(4byte_as|as4byte|four_(byte|octet)_as)/
-          OPT_PARM::CAP::As4.new(@my_as)
-        elsif r =~ /(gr|graceful_restart)/
-          OPT_PARM::CAP::Graceful_restart.new( *args)
-        else
-          super
-        end
+                        OPT_PARM::CAP::Mbgp.send ::Regexp.last_match(1)
+                      elsif r =~ /(rr|route_refresh)/
+                        OPT_PARM::CAP::Route_refresh.new(*args)
+                      elsif r =~ /(4byte_as|as4byte|four_(byte|octet)_as)/
+                        OPT_PARM::CAP::As4.new(@my_as)
+                      elsif r =~ /(gr|graceful_restart)/
+                        OPT_PARM::CAP::Graceful_restart.new(*args)
+                      else
+                        super
+                      end
       else
         super
       end
@@ -116,11 +115,11 @@ module BGP
       "#{@state}"
     end
 
-    def retry_thread(action=:start)
+    def retry_thread(action = :start)
       case action
       when :start
         @restart_thread = Thread.new do
-          Thread.current['name']='restart'
+          Thread.current['name'] = 'restart'
           loop do
             start if @state == :Idle
             sleep(4)
@@ -129,7 +128,8 @@ module BGP
 
       when :stop
         if defined? @restart_thread and @restart_thread.alive?
-          @restart_thread.kill ; @restart_thread.join
+          @restart_thread.kill
+          @restart_thread.join
         end
       end
     end
@@ -172,42 +172,45 @@ module BGP
         end
       end
     end
-    
+
     def clean
-      @threads.list.each { |x| 
-        x.exit; x.join
-        log_info "#{x['name']}: stopped at #{Time.now.strftime("%I:%M:%S%P")}"
-      }
+      @threads.list.each do |x|
+        x.exit
+        x.join
+        log_info "#{x['name']}: stopped at #{Time.now.strftime('%I:%M:%S%P')}"
+      end
     end
-    
+
     def open
       @open ||= BGP::Open.new(version, @my_as, holdtime, @id, *@opt_parms)
     end
-    
+
     def version
       @version ||= 4
     end
-    
+
     def holdtime
       @holdtime ||= 180
     end
-    
+
     def start_session(session)
-      @socket=session
-      return unless  @state == :Idle
+      @socket = session
+      return unless @state == :Idle
+
       init_io
       send_open :ev_send_open
     end
-    
-    def start(arg={})
-      options = {:port=> 179, :auto_retry=> false, :no_blocking=>false, :waitfor=> :Established}.merge(arg)
+
+    def start(arg = {})
+      options = { port: 179, auto_retry: false, no_blocking: false, waitfor: :Established }.merge(arg)
       return if @state == :Established
+
       stop unless @state == :Idle
-      if options[:session]
-        @socket = session
-      else
-        @socket = TCPSocket.new(@remote_addr, options[:port], local_host=@local_addr)
-      end
+      @socket = if options[:session]
+                  session
+                else
+                  TCPSocket.new(@remote_addr, options[:port], @local_addr)
+                end
       init_io
       send_open :ev_send_open
       retry_thread if options[:auto_retry] == true
@@ -218,16 +221,16 @@ module BGP
         end
         log_info "#{self} started"
       end
-    rescue => e
+    rescue StandardError => e
       Log.error "#{e}"
       stop
     end
-        
+
     def stop
-      @socket.close  if defined?(@socket) and not @socket.closed?
+      @socket.close if defined?(@socket) and !@socket.closed?
       clean
-      @open=nil
-      new_state :Idle, "Disable"
+      @open = nil
+      new_state :Idle, 'Disable'
     end
 
     define_method(:in) do
@@ -238,116 +241,112 @@ module BGP
     end
 
     attr_reader :as4byte, :session_info, :socket
-    
+
     def as4byte?
       @session_info.as4byte?
     end
 
     def send_message(m)
       raise if m.nil?
-      unless @out
-        log_warn "Could not Send#{m.class.to_s.split('::')[-1]}  @out is nil"
-      end
+
+      log_warn "Could not Send#{m.class.to_s.split('::')[-1]}  @out is nil" unless @out
       unless m.is_a?(String)
         log_info "Send#{m.class.to_s.split('::')[-1]}"
-        log_debug "Send #{m.is_a?(Update) ? m.to_s : m }\n"
+        log_debug "Send #{m.is_a?(Update) ? m.to_s : m}\n"
       end
       if m.is_a?(Update)
-         send_update m
+        send_update m
       else
         @out.enq m
       end
     end
-    
+
     def init_io
       @in = BGP::IO::Input.new(@socket, holdtime, self)
       @out = BGP::IO::Output.new(@socket, @holdtime, self)
-      new_state(:Active, "Open Socket")
-      [@in, @out].each { |io| 
-        io.start 
+      new_state(:Active, 'Open Socket')
+      [@in, @out].each do |io|
+        io.start
         @threads.add io.thread
-      }
+      end
     end
-    
+
     def update(*args)
       @eventQ.enq(args)
     end
-    
-    def new_state(state, txt='')
+
+    def new_state(state, txt = '')
       log_info "#{txt} old state #{@state} new state #{state}"
       @state = state
     end
-    
+
     def send_update(u)
       @out.enq u.encode(@session_info)
     end
-    
+
     def send_open(ev)
       case @state
       when :OpenRecv
-        send_message open  ; new_state :OpenConfirm, ev
+        send_message open
+        new_state :OpenConfirm, ev
       when :Active
-        send_message open  ; new_state :OpenSent, ev
+        send_message open
+        new_state :OpenSent, ev
       else
         Log.warn "#{self.class}: attempt to send OPEN msg while in #{@state}"
       end
     end
-  
+
     def rcv_open(peer_open)
       @session_info = Neighbor::Capabilities.new open, peer_open
-      
+
       @rmt_version  = peer_open.version
       @rmt_as       = peer_open.local_as
       @rmt_bgp_id   = peer_open.bgp_id
       @out.holdtime = @in.holdtime = peer_open.holdtime if @holdtime > peer_open.holdtime
-      
+
       case @state
       when :OpenSent
         send_message(BGP::Message.keepalive)
-        new_state :OpenConfirm, "RecvOpen"
+        new_state :OpenConfirm, 'RecvOpen'
       when :Active
-        send_open "RecvOpen"
-        new_state :OpenConfirm, "RecvOpen"
+        send_open 'RecvOpen'
+        new_state :OpenConfirm, 'RecvOpen'
       else
         Log.warn "#{self.class}: received open message while in state #{@state}"
       end
-      
     end
-    
+
     def rcv_keepalive
-      if @state == :OpenConfirm
-        send_message(BGP::Keepalive.new)
-        log_debug "SendKeepAlive state is #{@state}"
-        new_state(:Established, 'RecvKeepAlive')
-        @keepalive_thread = Thread.new(@holdtime/3) do |h|
-          Thread.current['name'] = "BGP Keepalive interval:(#{h})"
-          loop do
-            sleep(h)
-            send_message(BGP::Keepalive.new)
-          end
+      return unless @state == :OpenConfirm
+
+      send_message(BGP::Keepalive.new)
+      log_debug "SendKeepAlive state is #{@state}"
+      new_state(:Established, 'RecvKeepAlive')
+      @keepalive_thread = Thread.new(@holdtime / 3) do |h|
+        Thread.current['name'] = "BGP Keepalive interval:(#{h})"
+        loop do
+          sleep(h)
+          send_message(BGP::Keepalive.new)
         end
-        @threads.add(@keepalive_thread)
       end
+      @threads.add(@keepalive_thread)
     end
-    
+
     def rcv_notification(m)
       log_info "#{m}"
       changed and notify_observers(m)
       stop
     end
-    
-    def rcv_route_refresh(m)
-    end
-    
-    def rcv_update(m)
-    end
-    
+
+    def rcv_route_refresh(m); end
+
+    def rcv_update(m); end
+
     def to_s
       "version: #{version}, id: #{@id}, as: #{@my_as}, holdtime: #{@holdtime}, peer addr: #{@remote_addr}, local addr: #{@local_addr}"
     end
-    
   end
-
 end
 
-load "../../test/unit/neighbor/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/neighbor/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

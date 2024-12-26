@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -23,11 +23,8 @@
 require 'bgp/path_attributes/attribute'
 
 module BGP
-
   class Communities < Attr
-
     class Community
-
       class << self
         def method_missing(name, *args, &block)
           if name.to_s =~ /^(no_export|no_advertise|no_export_sub_confed|no_peer)$/
@@ -44,29 +41,30 @@ module BGP
         NO_EXPORT_SUB_CONFED  = 0xFFFFFF03
         NO_PEER               = 0xFFFFFF04
       end
-      
+
       def initialize(arg)
         if arg.is_a?(Symbol)
           case arg
-          when :no_export            ; @value=NO_EXPORT
-          when :no_advertise         ; @value=NO_ADVERTISE
-          when :no_export_sub_confed ; @value=NO_EXPORT_SUB_CONFED
-          when :no_peer              ; @value=NO_PEER
+          when :no_export then @value = NO_EXPORT
+          when :no_advertise then @value = NO_ADVERTISE
+          when :no_export_sub_confed then @value = NO_EXPORT_SUB_CONFED
+          when :no_peer then @value = NO_PEER
           else
             raise ArgumentError, "invalid argument #{arg.inspect}"
           end
-        elsif arg.is_a?(String) and arg.split(':').size==2
-          self.value=arg.split(':').collect { |n| n.to_i }.pack('n2').unpack('N')[0]
+        elsif arg.is_a?(String) and arg.split(':').size == 2
+          self.value = arg.split(':').collect { |n| n.to_i }.pack('n2').unpack('N')[0]
         elsif arg.respond_to?(:to_i)
-          self.value= arg.to_i
+          self.value = arg.to_i
         else
-          self.value=arg
+          self.value = arg
         end
       end
 
       def value=(val)
         raise ArgumentError, "invalid argument #{val.inspect}" unless val.is_a?(Integer)
-        @value=val
+
+        @value = val
       end
 
       def to_i
@@ -80,33 +78,34 @@ module BGP
       # The community attribute values ranging from 0x0000000 through
       # 0x0000FFFF and 0xFFFF0000 through 0xFFFFFFFF are hereby reserved.
       def is_reserved?
-        (0x0000000..0x0000FFFF ) === @value or (0xFFFF0000..0xFFFFFFFF) === @value
+        (0x0000000..0x0000FFFF).include?(@value) or (0xFFFF0000..0xFFFFFFFF).include?(@value)
       end
 
       def encode
         [@value].pack('N')
       end
-
     end
 
     class << self
-      def new_hash(arg={})
+      def new_hash(arg = {})
         o = new
         [:communities].each do |set_type|
           next unless arg.has_key? set_type
+
           case set_type
           when :communities
             o << arg[set_type]
           else
             raise
-          end 
+          end
         end
         o
       end
     end
 
     def initialize(*args)
-      @flags, @type = OPTIONAL_TRANSITIVE, COMMUNITIES
+      @flags = OPTIONAL_TRANSITIVE
+      @type = COMMUNITIES
       if args[0].is_a?(String) and args[0].is_packed?
         parse(args[0])
       elsif args[0].is_a?(self.class) and args[0].respond_to?(:encode)
@@ -117,11 +116,11 @@ module BGP
     end
 
     def add(*args)
-      @communities ||=[]
+      @communities ||= []
       args.flatten.each do |arg|
-        if arg.is_a?(String) and arg.split(' ').size>1
+        if arg.is_a?(String) and arg.split(' ').size > 1
           arg.split.each { |v| @communities << Community.new(v) }
-        elsif arg.is_a?(String) and arg.split(',').size>1
+        elsif arg.is_a?(String) and arg.split(',').size > 1
           arg.split(',').each { |v| @communities << Community.new(v) }
         elsif arg.is_a?(Community)
           @communities << arg
@@ -137,12 +136,12 @@ module BGP
       @communities.collect { |comm| comm.to_s }.join(' ')
     end
 
-    def to_s(method=:default)
+    def to_s(method = :default)
       super(communities, method)
     end
-    
+
     def to_hash
-      { :communities=> @communities.collect { |comm| comm.to_s } }
+      { communities: @communities.collect { |comm| comm.to_s } }
     end
 
     def encode
@@ -150,8 +149,8 @@ module BGP
     end
 
     def parse(s)
-      @flags, @type, len, value=super(s)
-      self << value.unpack("N#{len/4}")
+      @flags, @type, len, value = super(s)
+      self << value.unpack("N#{len / 4}")
     end
 
     def sort
@@ -164,42 +163,41 @@ module BGP
     end
 
     def <=>(other)
-      self.sort.to_shex <=> other.sort.to_shex
+      sort.to_shex <=> other.sort.to_shex
     end
-    
+
     def has?(arg)
-      ! has_no?(arg)
+      !has_no?(arg)
     end
 
     def has_no?(arg)
-      @communities.find { |c| c.to_i == arg_comm_to_i(arg) }.nil? 
+      @communities.find { |c| c.to_i == arg_comm_to_i(arg) }.nil?
     end
-    
-    %w{ no_export no_advertise no_export_sub_confed no_peer }.each do |wkc| 
+
+    %w[no_export no_advertise no_export_sub_confed no_peer].each do |wkc|
       define_method("has_#{wkc}?") do
         has? Community.const_get(wkc.upcase)
       end
     end
 
-    %w{ no_export no_advertise no_export_sub_confed no_peer }.each do |wkc| 
+    %w[no_export no_advertise no_export_sub_confed no_peer].each do |wkc|
       define_method("does_not_have_#{wkc}?") do
-        ! has? Community.const_get(wkc.upcase)
+        !has? Community.const_get(wkc.upcase)
       end
     end
 
     private
-    
+
     def arg_comm_to_i(arg)
       return arg if arg.is_a?(Integer)
+
       Community.new(arg).to_i
     end
 
     def to_a
       @communities.collect { |c| c.to_i }
     end
-
   end
-  
 end
 
-load "../../test/unit/path_attributes/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/path_attributes/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

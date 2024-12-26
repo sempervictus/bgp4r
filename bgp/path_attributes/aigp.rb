@@ -1,19 +1,18 @@
 require 'bgp/path_attributes/attribute'
 
 module BGP
-
   class Aigp < Attr
-
     def initialize(*args)
-      @flags, @type = OPTIONAL_NON_TRANSITIVE, ACCUMULATED_IGP_METRIC
+      @flags = OPTIONAL_NON_TRANSITIVE
+      @type = ACCUMULATED_IGP_METRIC
       if args[0].is_a?(String) and args[0].is_packed?
         parse(args[0])
       elsif args[0].is_a?(self.class)
         parse(args[0].encode, *args[1..-1])
-      elsif args.size==1 and args[0].is_a?(Integer)
+      elsif args.size == 1 and args[0].is_a?(Integer)
         @aigp = args[0]
       elsif args.empty?
-        @aigp=0
+        @aigp = 0
       else
         raise
       end
@@ -22,17 +21,17 @@ module BGP
     def to_i
       @aigp.to_i
     end
-    
+
     def to_hash
-      {:aigp=> to_i}
+      { aigp: to_i }
     end
-    
+
     def accumulated_igp_metric
-      format("(0x%8.8x) %d", to_i, to_i)
+      format('(0x%8.8x) %d', to_i, to_i)
     end
     alias metric accumulated_igp_metric
-    
-    def to_s(method=:default)
+
+    def to_s(method = :default)
       super(accumulated_igp_metric, method)
     end
 
@@ -41,23 +40,20 @@ module BGP
     end
 
     def parse(s)
-      @flags, @type, _, value=super(s)
+      @flags, @type, _, value = super(s)
       _, _, high, low = value.unpack('CnNN')
       @aigp = (high << 32) + low
     end
-
   end
 
   class Aigp
     class << self
-      def new_hash(_arg={})
-        arg = {:aigp=>0}.merge(_arg)
+      def new_hash(_arg = {})
+        arg = { aigp: 0 }.merge(_arg)
         new arg[:aigp]
       end
     end
   end
-
-
 end
 
-load "../../test/unit/path_attributes/#{ File.basename($0.gsub(/.rb/,'_test.rb'))}" if __FILE__ == $0
+load "../../test/unit/path_attributes/#{File.basename($0.gsub(/.rb/, '_test.rb'))}" if __FILE__ == $0

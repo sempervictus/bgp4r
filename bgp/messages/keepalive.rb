@@ -1,5 +1,5 @@
 # KEEPALIVE Message Format
-# 
+#
 #    BGP does not use any TCP-based, keep-alive mechanism to determine if
 #    peers are reachable.  Instead, KEEPALIVE messages are exchanged
 #    between peers often enough not to cause the Hold Timer to expire.  A
@@ -8,10 +8,10 @@
 #    frequently than one per second.  An implementation MAY adjust the
 #    rate at which it sends KEEPALIVE messages as a function of the Hold
 #    Time interval.
-# 
+#
 #    If the negotiated Hold Time interval is zero, then periodic KEEPALIVE
 #    messages MUST NOT be sent.
-# 
+#
 #    A KEEPALIVE message consists of only the message header and has a
 #    length of 19 octets.
 #
@@ -21,12 +21,14 @@ require 'bgp/messages/message'
 module BGP
   class Keepalive < Message
     def initialize
-      @msg_type=KEEPALIVE
-      @keepalive=[[0xffffffff]*4,"001304"].flatten.pack('NNNNH6')
+      @msg_type = KEEPALIVE
+      @keepalive = [[0xffffffff] * 4, '001304'].flatten.pack('NNNNH6')
     end
+
     def to_s
-      "Keepalive Message (#{KEEPALIVE}), length: 19" + ", [#{self.to_shex[32..-1]}]"
+      "Keepalive Message (#{KEEPALIVE}), length: 19" + ", [#{to_shex[32..-1]}]"
     end
+
     def encode
       @keepalive
     end

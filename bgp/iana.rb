@@ -5,12 +5,12 @@
 #
 #
 # This file is part of BGP4R.
-# 
+#
 # BGP4R is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # BGP4R is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -20,37 +20,43 @@
 # along with BGP4R.  If not, see <http://www.gnu.org/licenses/>.
 #++
 
-# 
+#
 # http://www.iana.org/assignments/address-family-numbers/
-# 
+#
 module IANA
   def self.afi?(arg)
     afis[arg]
   end
+
   def self.afi(arg)
     arg.is_a?(Integer) ? arg : afis[arg]
   end
+
   def self.safi(arg)
     arg.is_a?(Integer) ? arg : safis[arg]
   end
+
   def self.safis
     @h_safis ||= SAFI.set_h_safis
   end
+
   def self.afis
     @h_afis ||= AFI.set_h_afis
   end
+
   def self.safi?(arg)
     case arg
-    when SAFI::UNICAST            ; 'Unicast'
-    when SAFI::MULTICAST          ; 'Multicast'
-    when SAFI::LABEL_NLRI         ; 'Labeled NLRI'
-    when SAFI::MCAST_VPN          ; 'Multicast VPN'
-    when SAFI::MPLS_VPN_UNICAST   ; 'Labeled VPN Unicast'
-    when SAFI::MPLS_VPN_Multicast ; 'Labeled VPN Multicast'
+    when SAFI::UNICAST then 'Unicast'
+    when SAFI::MULTICAST then 'Multicast'
+    when SAFI::LABEL_NLRI then 'Labeled NLRI'
+    when SAFI::MCAST_VPN then 'Multicast VPN'
+    when SAFI::MPLS_VPN_UNICAST then 'Labeled VPN Unicast'
+    when SAFI::MPLS_VPN_Multicast then 'Labeled VPN Multicast'
     else
       safis[arg]
     end
   end
+
   module AFI
     IPv4 = 1
     IPv6 = 2
@@ -78,7 +84,7 @@ module IANA
     GWID = 24
     L2VPN = 25
     def self.set_h_afis
-      h_afis = Hash.new
+      h_afis = {}
       constants.each do |c|
         h_afis.store(c.to_s.downcase.to_sym, const_get(c))
         h_afis.store(const_get(c), c.to_s.split('_').collect { |w| w }.join(' '))
@@ -86,9 +92,10 @@ module IANA
       h_afis
     end
   end
+
   module SAFI
     def self.set_h_safis
-      h_safis = Hash.new
+      h_safis = {}
       constants.each do |c|
         h_safis.store(c.to_s.downcase.to_sym, const_get(c))
         h_safis.store(const_get(c), c.to_s.split('_').collect { |w| w }.join(' '))
