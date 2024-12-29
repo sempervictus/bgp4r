@@ -77,7 +77,7 @@ module BGP
       "Open Message (#{OPEN}), length: #{msg.size}\n" +
         "  Version #{@version}, my AS #{_my_encoded_as_}, Holdtime #{@holdtime}s, ID #{@bgp_id}" +
         ([''] + @opt_parms.compact.collect { |cap| cap.to_s } + ['']).join("\n  ") +
-        msg.hexlify.join("\n") + "\n"
+        msg.extend(HexlifyExt).hexlify.join("\n") + "\n"
     end
 
     def find(klass)

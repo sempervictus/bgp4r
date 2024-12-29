@@ -188,7 +188,7 @@ class BGP::Update < BGP::Message
       s << @nlri.to_s
     end
     "Update Message (#{UPDATE}), #{session_info.as4byte? ? '4 bytes AS, ' : ''}length: #{msg.size}\n" +
-      s.join("\n") + "\n" + msg.hexlify.join("\n") + "\n"
+      s.join("\n") + "\n" + msg.extend(HexlifyExt).hexlify.join("\n") + "\n"
   end
 
   def to_hash

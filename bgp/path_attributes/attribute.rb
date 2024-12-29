@@ -157,9 +157,9 @@ module BGP
                    "#{value.size > 0 ? " '#{value}" : ''}"
         s += "\n\n"
         if as4byte
-          s + encode4.hexlify.join("\n")
+          s + encode4.extend(HexlifyExt).hexlify.join("\n")
         else
-          s + encode.hexlify.join("\n")
+          s + encode.extend(HexlifyExt).hexlify.join("\n")
         end
       when :tcpdump
         if as4byte
@@ -168,7 +168,7 @@ module BGP
           _, _, len, enc_value = _parse_(encode, nil)
         end
         s = format '%s (%d), length: %d, Flags %s: %s', attribute_name, @type, len, flags_short, value
-        s + enc_value.hexlify.join("\n   ")
+        s + enc_value.extend(HexlifyExt).hexlify.join("\n   ")
       end
     end
   end

@@ -124,7 +124,9 @@ class String
     self
   end
   alias packed? :is_packed?
+end
 
+module HexlifyExt
   def hexlify
     return self unless is_packed? or size == 0
 
@@ -140,10 +142,10 @@ class String
     if l.size % 2 > 0
       ns = l.size > 1 ? 1 : 0
       ls.last << if RUBY_VERSION.split('.').join[0, 2] > '18'
-                   format('%s%2.2x', ' ' * ns, l[-1].unpack('C')[0])
-                 else
-                   format('%s%2.2x', ' ' * ns, l[-1])
-                 end
+        format('%s%2.2x', ' ' * ns, l[-1].unpack('C')[0])
+      else
+        format('%s%2.2x', ' ' * ns, l[-1])
+      end
     end
     ls
   end
