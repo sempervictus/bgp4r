@@ -46,7 +46,7 @@ module BGP
           @enc_type = 0
         when 1
           @enc_type = 1
-          @admin = IPAddr.new(admin)
+          @admin = BGPAddr.new(admin)
           @assign = assign
         when 2
           @admin = admin
@@ -56,12 +56,12 @@ module BGP
       elsif args.size == 2
         admin, assign = args
         if admin.is_a?(String)
-          @admin = IPAddr.new(admin)
+          @admin = BGPAddr.new(admin)
           @assign = assign
           @enc_type = 1
         elsif assign.is_a?(String)
           @admin = admin
-          @assign = IPAddr.new(assign).to_i
+          @assign = BGPAddr.new(assign).to_i
           @enc_type = 2
         else
           @admin = admin
@@ -76,7 +76,7 @@ module BGP
 
     def to_hash
       # FIXME
-      if @admin.is_a?(IPAddr)
+      if @admin.is_a?(BGPAddr)
         { rd: [@admin.to_s, @assign] }
       else
         { rd: [@admin, @assign] }
@@ -100,7 +100,7 @@ module BGP
         @enc_type, @admin, @assign = s.unpack('nnN')
       when 1
         @enc_type, admin, @assign = s.unpack('na4n')
-        @admin = IPAddr.new_ntoh(admin)
+        @admin = BGPAddr.new_ntoh(admin)
       when 2
         @enc_type, @admin, @assign = s.unpack('nNn')
       else

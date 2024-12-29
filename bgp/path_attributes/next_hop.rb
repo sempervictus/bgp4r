@@ -43,12 +43,12 @@ module BGP
         parse(args[0].encode, *args[1..-1])
       elsif args[0].is_a?(Hash)
         if args[0].has_key?(:next_hop)
-          @next_hop = IPAddr.create(args[0][:next_hop])
+          @next_hop = BGPAddr.create(args[0][:next_hop])
         elsif arg.has_key?(:nexthop)
-          @next_hop = IPAddr.create(args[0][:nexthop])
+          @next_hop = BGPAddr.create(args[0][:nexthop])
         end
       else
-        @next_hop = IPAddr.create(*args)
+        @next_hop = BGPAddr.create(*args)
       end
     end
 
@@ -70,7 +70,7 @@ module BGP
 
     def parse(s)
       @flags, @type, _, value = super(s)
-      @next_hop = IPAddr.new_ntoh(value[0, 4])
+      @next_hop = BGPAddr.new_ntoh(value[0, 4])
     end
 
     def encode

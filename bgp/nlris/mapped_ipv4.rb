@@ -10,7 +10,7 @@
 require 'bgp/common'
 
 module BGP
-  class Ipv4_mapped < IPAddr
+  class Ipv4_mapped < BGPAddr
     include ToShex
     def initialize(ipaddr)
       super

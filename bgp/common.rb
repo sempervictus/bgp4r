@@ -16,18 +16,18 @@
 require 'ipaddr'
 require 'logger'
 
-class IPAddr
+class BGPAddr < IPAddr
   alias encode hton
 
   def self.create(arg)
     if arg.is_a?(String) and arg.is_packed?
-      IPAddr.new_ntoh(arg)
+      BGPAddr.new_ntoh(arg)
     elsif arg.is_a?(Integer)
-      IPAddr.new_ntoh([arg].pack('N'))
+      BGPAddr.new_ntoh([arg].pack('N'))
     elsif arg.is_a?(Array) and arg[0].is_a?(Integer)
-      IPAddr.new_ntoh([arg].pack('C*'))
+      BGPAddr.new_ntoh([arg].pack('C*'))
     else
-      IPAddr.new(arg)
+      BGPAddr.new(arg)
     end
   end
 
@@ -41,7 +41,7 @@ class IPAddr
   end
 
   def +(other)
-    [IPAddr.create(to_i + other).to_s, mlen].join('/')
+    [BGPAddr.create(to_i + other).to_s, mlen].join('/')
   end
 
   def increment
@@ -51,10 +51,10 @@ class IPAddr
   def ^(other)
     x = to_i + increment.call(other)
     if ipv4?
-      [IPAddr.create(x).to_s, mlen].join('/')
+      [BGPAddr.create(x).to_s, mlen].join('/')
     else
       y = [(format '%032x', x)].pack('H*')
-      [IPAddr.new_ntoh(y).to_s, mlen].join('/')
+      [BGPAddr.new_ntoh(y).to_s, mlen].join('/')
     end
   end
 

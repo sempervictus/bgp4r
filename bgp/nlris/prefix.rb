@@ -63,7 +63,7 @@ module BGP
       @pfx = if pfx =~ /^49\./
                Nsap.new_nsap(pfx)
              else
-               IPAddr.new(pfx)
+               BGPAddr.new(pfx)
              end
     end
     %i[iso ipv4 ipv6].each do |afi|

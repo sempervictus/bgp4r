@@ -47,7 +47,7 @@ module BGP
       else
         @msg_type = OPEN
         @version, @local_as, @holdtime, bgp_id, *@opt_parms = args
-        @bgp_id = IPAddr.new(bgp_id)
+        @bgp_id = BGPAddr.new(bgp_id)
       end
     end
 
@@ -108,7 +108,7 @@ module BGP
         @version, @local_as, @holdtime, bgp_id, _, opt_parms = s.unpack('Cnna4Ca*')
       end
       @opt_parms << Optional_parameter.factory(opt_parms) while opt_parms.size > 0
-      @bgp_id = IPAddr.new_ntoh(bgp_id)
+      @bgp_id = BGPAddr.new_ntoh(bgp_id)
     end
   end
 end

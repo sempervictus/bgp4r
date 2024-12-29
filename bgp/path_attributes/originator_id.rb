@@ -51,7 +51,7 @@ module BGP
 
     def parse(s)
       @flags, @type, _, value = super(s)
-      @origin_id = IPAddr.create(value)
+      @origin_id = BGPAddr.create(value)
     end
 
     def encode
@@ -71,7 +71,7 @@ module BGP
     end
 
     def originator_id=(val)
-      @origin_id = IPAddr.create(val)
+      @origin_id = BGPAddr.create(val)
     end
   end
 end

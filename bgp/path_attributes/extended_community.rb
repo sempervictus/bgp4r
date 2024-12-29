@@ -143,7 +143,7 @@ module BGP
       when TWO_OCTET_AS
         "#{@global}:#{@local}"
       when IPV4_ADDR
-        "#{IPAddr.create(@global)}:#{@local}"
+        "#{BGPAddr.create(@global)}:#{@local}"
       when OPAQUE
         "#{@global}"
       when FLOAT
@@ -156,7 +156,7 @@ module BGP
     def value2
       case community_structure
       when FLOAT then @global
-      when IPV4_ADDR then ["#{IPAddr.create(@global)}", @local]
+      when IPV4_ADDR then ["#{BGPAddr.create(@global)}", @local]
       else
         [@global, @local]
       end
@@ -239,7 +239,7 @@ module BGP
         @type, @subtype, @global, @local = args
         if @global.is_a?(String) and @local.is_a?(Integer)
           @type |= IPV4_ADDR
-          @global = IPAddr.new(@global).to_i
+          @global = BGPAddr.new(@global).to_i
         end
       elsif args.size == 1 and args[0].is_a?(Integer)
         parse([s].pack('H*'))
@@ -285,7 +285,7 @@ module BGP
     end
 
     def value2
-      "#{IPAddr.create(@global)}"
+      "#{BGPAddr.create(@global)}"
     end
   end
 
@@ -300,7 +300,7 @@ module BGP
     end
 
     def value2
-      "#{IPAddr.create(@global)}"
+      "#{BGPAddr.create(@global)}"
     end
   end
 

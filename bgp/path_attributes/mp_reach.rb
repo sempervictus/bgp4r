@@ -116,7 +116,7 @@ module BGP
         elsif _arg =~ /^49\./
           3
         else
-          IPAddr.new(_arg).ipv4? ? 1 : 2
+          BGPAddr.new(_arg).ipv4? ? 1 : 2
         end
       end
     end
@@ -298,7 +298,7 @@ module BGP
       else
         case safi
         when 1, 2, 4
-          if afi == 2 && IPAddr.new(nh).ipv4?
+          if afi == 2 && BGPAddr.new(nh).ipv4?
             ::BGP.const_get('Ipv4_mapped')
           else
             ::BGP.const_get('Prefix')

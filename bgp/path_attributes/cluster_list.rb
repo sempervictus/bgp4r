@@ -29,7 +29,7 @@ module BGP
     ##########################################################
     class Id
       def initialize(id)
-        @id = IPAddr.create(id)
+        @id = BGPAddr.create(id)
       end
 
       def to_s

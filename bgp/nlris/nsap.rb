@@ -68,7 +68,7 @@ module BGP
     end
   end
 
-  class Iso_ip_mapped < IPAddr
+  class Iso_ip_mapped < BGPAddr
     include ToShex
     def afi
       if ipv4?

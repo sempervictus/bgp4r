@@ -32,12 +32,12 @@ module BGP
         parse(*args)
       elsif args.size == 2 and
             args[0].is_a?(String) and args[1].is_a?(Integer)
-        @ip_address = IPAddr.create(args[0])
+        @ip_address = BGPAddr.create(args[0])
         self.asn = args[1]
       elsif args[0].is_a?(self.class)
         parse(args[0].encode, *args[1..-1])
       elsif args[0].is_a?(Hash)
-        @ip_address = IPAddr.create(args[0][:address])
+        @ip_address = BGPAddr.create(args[0][:address])
         self.asn = args[0][:asn]
       else
         raise ArgumentError, "invalid argument, #{args.inspect}"
@@ -51,7 +51,7 @@ module BGP
     end
 
     def address=(val)
-      @ip_address = IPAddr.create(val)
+      @ip_address = BGPAddr.create(val)
     end
 
     def address
